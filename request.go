@@ -1,7 +1,8 @@
-package utils
+package apiutils
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"net/http"
@@ -10,16 +11,22 @@ import (
 type Request struct {
 	Sort       []string
 	Device     string
+	Callback   string
 	PageNumber int
 	PageSize   int
 }
 
 var MaximumPageSize int = 25
+var validVariableName = regexp.Compile("^[a-zA-Z\\$_]+[a-zA-Z0-9\\$_]*(\\.[a-zA-Z\\$_]+[a-zA-Z0-9\\$_]*)*$")
 
 func ParseRequest(r *http.Request) (Request, error) {
 	req := Request{}
 
 	req.Device = r.FormValue("device")
+	req.Callback = r.FormValue("callback")
+	if req.Callback && !validVariableName.Match([]byte(req.Callback)) {
+		return Request{}, fmt.Errorf("invalid callback")
+	}
 
 	req.PageNumber, _ = strconv.Atoi(r.FormValue("page[number]"))
 	if req.PageNumber < 1 {

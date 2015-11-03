@@ -1,4 +1,4 @@
-package utils
+package apiutils
 
 import (
 	"encoding/json"
@@ -8,10 +8,16 @@ import (
 
 func WriteResponse(w http.ResponseWriter, r interface{}, statusCode int) {
 	b, _ := json.Marshal(r)
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Type", "application/json")
+	if r.Callback {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
+		fmt.Fprintf(w, "%s", string(b))
+		return
+	}
+	w.Header().Set("Content-Type", "text/javascript")
 	w.WriteHeader(statusCode)
-	fmt.Fprintf(w, "%s", string(b))
+	fmt.Fprintf(w, "%s(%s)", r.Callback, string(b))
 }
 
 func WriteErrorResponse(w http.ResponseWriter, statusCode int) {
@@ -32,8 +38,14 @@ func WriteErrorResponse(w http.ResponseWriter, statusCode int) {
 
 type (
 	Response struct {
-		Links  ResponseLink    `json:"links,omitempty"`
-		Errors []ResponseError `json:"errors,omitempty"`
+		Callback string          `json:"-"`
+		Links    ResponseLink    `json:"links,omitempty"`
+		Meta     ResponseMeta    `json:"meta,omitempty"`
+		Errors   []ResponseError `json:"errors,omitempty"`
+	}
+	ResponseMeta struct {
+		ProcessTime float64 `json:"process_time"`
+		TotalData   int64   `json:"total_data"`
 	}
 	ResponseLink struct {
 		Self  string `json:"self,omitempty"`
