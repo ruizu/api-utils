@@ -8,7 +8,7 @@ import (
 
 func WriteResponse(w http.ResponseWriter, r interface{}, statusCode int) {
 	b, _ := json.Marshal(r)
-	if r.Callback {
+	if r.(Response).Callback != "" {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
@@ -17,7 +17,7 @@ func WriteResponse(w http.ResponseWriter, r interface{}, statusCode int) {
 	}
 	w.Header().Set("Content-Type", "text/javascript")
 	w.WriteHeader(statusCode)
-	fmt.Fprintf(w, "%s(%s)", r.Callback, string(b))
+	fmt.Fprintf(w, "%s(%s)", r.(Response).Callback, string(b))
 }
 
 func WriteErrorResponse(w http.ResponseWriter, statusCode int) {

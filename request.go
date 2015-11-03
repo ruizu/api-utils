@@ -2,6 +2,7 @@ package apiutils
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,15 +17,25 @@ type Request struct {
 	PageSize   int
 }
 
-var MaximumPageSize int = 25
-var validVariableName = regexp.Compile("^[a-zA-Z\\$_]+[a-zA-Z0-9\\$_]*(\\.[a-zA-Z\\$_]+[a-zA-Z0-9\\$_]*)*$")
+var (
+	MaximumPageSize int = 25
+	validVariableName *regexp.Regexp
+)
+
+func init() {
+	var err error
+	validVariableName, err = regexp.Compile("^[a-zA-Z\\$_]+[a-zA-Z0-9\\$_]*(\\.[a-zA-Z\\$_]+[a-zA-Z0-9\\$_]*)*$")
+	if err != nil {
+		log.Panic(err)
+	}
+}
 
 func ParseRequest(r *http.Request) (Request, error) {
 	req := Request{}
 
 	req.Device = r.FormValue("device")
 	req.Callback = r.FormValue("callback")
-	if req.Callback && !validVariableName.Match([]byte(req.Callback)) {
+	if req.Callback != "" && !validVariableName.Match([]byte(req.Callback)) {
 		return Request{}, fmt.Errorf("invalid callback")
 	}
 

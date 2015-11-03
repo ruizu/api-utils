@@ -1,7 +1,7 @@
 package apiutils
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 )
 
@@ -20,8 +20,8 @@ var PanicHandler = func(w http.ResponseWriter, r *http.Request, err interface{})
 		r := &Response{}
 		r.AddError(
 			fmt.Sprintf("HTTP%d", http.StatusInternalServerError),
-			http.StatusInternalServerError,
-			err)
+			http.StatusText(http.StatusInternalServerError),
+			fmt.Sprintf("%v", err))
 		WriteResponse(w, r, http.StatusInternalServerError)
 		return
 	}
