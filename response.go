@@ -3,12 +3,27 @@ package apiutils
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"reflect"
 )
 
 func WriteResponse(w http.ResponseWriter, r interface{}, statusCode int) {
+	d := reflect.ValueOf(r)
+	s := d.Elem()
+
+	if s.Kind() != reflect.Struct {
+		log.Panic("Unable to reflect response")
+	}
+
+	f := s.FieldByName("Callback")
+	if !f.IsValid() || f.Kind() != reflect.String {
+		log.Panic("Invalid reflect field")
+	}
+
+	c := f.String()
 	b, _ := json.Marshal(r)
-	if r.(Response).Callback != "" {
+	if c == "" {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
@@ -17,7 +32,7 @@ func WriteResponse(w http.ResponseWriter, r interface{}, statusCode int) {
 	}
 	w.Header().Set("Content-Type", "text/javascript")
 	w.WriteHeader(statusCode)
-	fmt.Fprintf(w, "%s(%s)", r.(Response).Callback, string(b))
+	fmt.Fprintf(w, "%s(%s)", c, string(b))
 }
 
 func WriteErrorResponse(w http.ResponseWriter, statusCode int) {
