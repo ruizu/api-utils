@@ -16,23 +16,24 @@ func WriteResponse(w http.ResponseWriter, r interface{}, statusCode int) {
 		log.Panic("Unable to reflect response")
 	}
 
-	f := s.FieldByName("Callback")
-	if !f.IsValid() || f.Kind() != reflect.String {
+	fc := s.FieldByName("Callback")
+	if !fc.IsValid() || fc.Kind() != reflect.String {
 		log.Panic("Invalid reflect field")
 	}
+	callback := fc.String()
 
-	c := f.String()
 	b, _ := json.Marshal(r)
-	if c == "" {
+	if callback == "" {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
 		fmt.Fprintf(w, "%s", string(b))
 		return
 	}
+
 	w.Header().Set("Content-Type", "text/javascript")
 	w.WriteHeader(statusCode)
-	fmt.Fprintf(w, "%s(%s)", c, string(b))
+	fmt.Fprintf(w, "%s(%s)", callback, string(b))
 }
 
 func WriteErrorResponse(w http.ResponseWriter, statusCode int) {
@@ -60,7 +61,7 @@ type (
 	}
 	ResponseMeta struct {
 		ProcessTime float64 `json:"process_time"`
-		TotalData   int64   `json:"total_data"`
+		TotalData   int     `json:"total_data"`
 	}
 	ResponseLink struct {
 		Self  string `json:"self,omitempty"`

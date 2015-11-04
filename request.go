@@ -2,7 +2,6 @@ package apiutils
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,23 +10,23 @@ import (
 
 type Request struct {
 	Sort       []string
+	Filter     map[string][]string
 	Device     string
 	Callback   string
 	PageNumber int
 	PageSize   int
+	PageLimit  int
+	PageOffset int
 }
 
 var (
-	MaximumPageSize int = 25
 	validVariableName *regexp.Regexp
+	validFilterName   *regexp.Regexp
 )
 
 func init() {
-	var err error
-	validVariableName, err = regexp.Compile("^[a-zA-Z\\$_]+[a-zA-Z0-9\\$_]*(\\.[a-zA-Z\\$_]+[a-zA-Z0-9\\$_]*)*$")
-	if err != nil {
-		log.Panic(err)
-	}
+	validVariableName = regexp.MustCompile("^[a-zA-Z\\$_]+[a-zA-Z0-9\\$_]*(\\.[a-zA-Z\\$_]+[a-zA-Z0-9\\$_]*)*$")
+	validFilterName = regexp.MustCompile("^filter\\[([^\\]]+?)\\]$")
 }
 
 func ParseRequest(r *http.Request) (Request, error) {
@@ -49,8 +48,18 @@ func ParseRequest(r *http.Request) (Request, error) {
 		req.PageSize = 1
 	}
 
-	if req.PageSize > MaximumPageSize {
-		return Request{}, fmt.Errorf("invalid page[size]")
+	req.PageLimit = req.PageSize
+	req.PageOffset = req.PageSize*(req.PageNumber-1)
+
+	form := r.Form;
+	req.Filter = make(map[string][]string)
+	for k, v := range form {
+		if v[0] == "" {
+			continue
+		}
+		if t := validFilterName.FindStringSubmatch(k); len(t) > 0 {
+			req.Filter[t[1]] = strings.Split(v[0], ",")
+		}
 	}
 
 	req.Sort = []string{}
