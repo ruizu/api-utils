@@ -1,11 +1,13 @@
 package apiutils
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"net/http"
+	"net/url"
 )
 
 type Request struct {
@@ -50,17 +52,7 @@ func ParseRequest(r *http.Request) (Request, error) {
 
 	req.PageLimit = req.PageSize
 	req.PageOffset = req.PageSize*(req.PageNumber-1)
-
-	form := r.Form;
-	req.Filter = make(map[string][]string)
-	for k, v := range form {
-		if v[0] == "" {
-			continue
-		}
-		if t := validFilterName.FindStringSubmatch(k); len(t) > 0 {
-			req.Filter[t[1]] = strings.Split(v[0], ",")
-		}
-	}
+	req.Filter = parseRequestFilters(r.Form)
 
 	req.Sort = []string{}
 	sorts := strings.Split(r.FormValue("sort"), ",")
@@ -80,8 +72,53 @@ func ParseRequest(r *http.Request) (Request, error) {
 	return req, nil
 }
 
-func GetID(value string) ([]int, error) {
-	idn := []int{}
+func parseRequestFilters(form url.Values) map[string][]string {
+	filters := make(map[string][]string)
+	for k, v := range form {
+		if v[0] == "" {
+			continue
+		}
+		if t := validFilterName.FindStringSubmatch(k); len(t) > 0 {
+			filters[t[1]] = strings.Split(v[0], ",")
+		}
+	}
+	return filters
+}
+
+func (req Request) FilterString(name string) string {
+	if v, ok := req.Filter[name]; ok {
+		return v[0]
+	}
+	return ""
+}
+
+func (req Request) FilterInt(name string) int {
+	v := req.FilterString(name)
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+func (req Request) FilterBool(name string) bool {
+	v := req.FilterInt(name)
+	if v > 0 {
+		return true
+	}
+	return false
+}
+
+func ParseBodyRequest(r *http.Request, v interface{}) error {
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(v); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetIDs(value string) ([]int64, error) {
+	idn := []int64{}
 	ida := strings.Split(value, ",")
 	if len(ida) == 1 && ida[0] == "" {
 		return idn, nil
@@ -93,7 +130,7 @@ func GetID(value string) ([]int, error) {
 			continue
 		}
 
-		n, err := strconv.Atoi(v)
+		n, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			return nil, err
 		}
@@ -102,4 +139,9 @@ func GetID(value string) ([]int, error) {
 	}
 
 	return idn, nil
+}
+
+// deprecated
+func GetID(value string) ([]int64, error) {
+	return GetIDs(value)
 }

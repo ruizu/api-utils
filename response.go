@@ -55,13 +55,13 @@ func WriteErrorResponse(w http.ResponseWriter, statusCode int) {
 type (
 	Response struct {
 		Callback string          `json:"-"`
-		Links    ResponseLink    `json:"links,omitempty"`
-		Meta     ResponseMeta    `json:"meta,omitempty"`
+		Links    *ResponseLink   `json:"links,omitempty"`
+		Meta     *ResponseMeta   `json:"meta,omitempty"`
 		Errors   []ResponseError `json:"errors,omitempty"`
 	}
 	ResponseMeta struct {
-		ProcessTime float64 `json:"process_time"`
-		TotalData   int     `json:"total_data"`
+		ProcessTime float64 `json:"-"`
+		TotalData   int     `json:"total_data,omitempty"`
 	}
 	ResponseLink struct {
 		Self  string `json:"self,omitempty"`
