@@ -11,7 +11,7 @@ import (
 )
 
 type Request struct {
-	UserID     string
+	UserID     int64
 	Sort       []string
 	Filter     map[string][]string
 	Device     string
@@ -35,7 +35,7 @@ func init() {
 func ParseRequest(r *http.Request) (Request, error) {
 	req := Request{}
 
-	req.UserID, _ = strconv.Atoi(r.Header.Get("X-User-ID"))
+	req.UserID, _ = strconv.ParseInt(r.Header.Get("X-User-ID"), 10, 64)
 	req.Device = r.FormValue("device")
 	req.Callback = r.FormValue("callback")
 	if req.Callback != "" && !validVariableName.Match([]byte(req.Callback)) {
